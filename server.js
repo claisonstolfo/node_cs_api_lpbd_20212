@@ -55,6 +55,100 @@ sw.get('/listmodo', function (req, res) {
 });
 
 
+//cria o serviço web, no modo web para inserir registros da tabela tb_modo
+sw.post('/insertmodo', function (req, res, next) {
+    
+    postgres.connect(function(err,client,done) {
+
+       if(err){
+
+           console.log("Nao conseguiu acessar o  BD "+ err);
+           res.status(400).send('{'+err+'}');
+       }else{            
+
+            var q ={
+                //insert into tb_modo (nome, datacriacao, quantboots, quantrounds) values ('TESTE', now(), 8, 20);
+                text: 'insert into tb_modo (nome, datacriacao, quantboots, quantrounds) values ($1, now(), $2, $3) returning codigo',
+                values: [req.body.nome, req.body.quantboots, req.body.quantrounds]
+            }
+            console.log(q);
+    
+            client.query(q,function(err,result) {
+                done(); // closing the connection;
+                if(err){
+                    console.log('retornou 400 no insert');
+                    console.log(err);
+                    console.log(err.data);
+                    res.status(400).send('{'+err+'}');
+                }else{
+
+                    console.log('retornou 201 no insert');
+                    res.status(201).send(result.rows[0]);//se não realizar o send nao finaliza o client
+                }           
+            });
+       }       
+    });
+});
+
+//cria o serviço web, no modo web para atualizar registros da tabela tb_modo
+sw.post('/updatemodo/', (req, res) => {
+
+    postgres.connect(function(err,client,done) {
+        if(err){
+
+            console.log("Não conseguiu acessar o BD: "+ err);
+            res.status(400).send('{'+err+'}');
+
+        }else{
+
+            var q ={
+                //update tb_modo set nome = '', quantboots = 0, quantrounds = 0 where codigo = 4
+                text: 'update tb_modo set nome = $1, quantboots = $2, quantrounds = $3 where codigo = $4',
+                values: [req.body.nome, req.body.quantboots, req.body.quantrounds, req.body.codigo]
+            }
+            console.log(q);
+     
+            client.query(q,function(err,result) {
+                done(); // closing the connection;
+                if(err){
+                    console.log("Erro no updatemodo: "+err);
+                    res.status(400).send('{'+err+'}');
+                }else{             
+                    res.status(200).send(req.body);//se não realizar o send nao finaliza o client nao finaliza
+                }
+            });
+        }
+     });
+});
+
+sw.get('/deletemodo/:codigo', (req, res) => {
+
+    postgres.connect(function(err,client,done) {
+        if(err){
+            console.log("Não conseguiu acessar o banco de dados"+ err);
+            res.status(400).send('{'+err+'}');
+        }else{
+            
+            var q ={
+                text: 'delete FROM tb_modo where codigo = $1',
+                values: [req.params.codigo]
+            }
+    
+            client.query( q , function(err,result) {
+                done(); // closing the connection;
+                if(err){
+                    console.log(err);
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    res.status(200).send({'codigo': req.params.codigo});//retorna o codigo deletado.
+                }
+
+            });
+        } 
+     });
+
+});
+
 //cria o serviço web, no modo web para listar os registros da tabela tb_local
 sw.get('/listlocal', function (req, res) {
     //estabelece uma conexão com o banco de dados
@@ -77,6 +171,99 @@ sw.get('/listlocal', function (req, res) {
             });
         } 
     });
+});
+
+//cria o serviço web, no modo web para inserir registros da tabela tb_modo
+sw.post('/insertlocal', function (req, res, next) {
+    
+    postgres.connect(function(err,client,done) {
+
+       if(err){
+
+           console.log("Nao conseguiu acessar o  BD "+ err);
+           res.status(400).send('{'+err+'}');
+       }else{            
+
+            var q ={
+                //insert into tb_loca (nome, statuslocal) values ('claison', true);
+                text: 'insert into tb_local (nome, statuslocal) values ($1, $2) returning codigo',
+                values: [req.body.nome, req.body.statuslocal]
+            }
+            console.log(q);
+    
+            client.query(q,function(err,result) {
+                done(); // closing the connection;
+                if(err){
+                    console.log('retornou 400 no insert');
+                    console.log(err);
+                    console.log(err.data);
+                    res.status(400).send('{'+err+'}');
+                }else{
+
+                    console.log('retornou 201 no insert');
+                    res.status(201).send(result.rows[0]);//se não realizar o send nao finaliza o client
+                }           
+            });
+       }       
+    });
+});
+
+sw.post('/updatelocal/', (req, res) => {
+
+    postgres.connect(function(err,client,done) {
+        if(err){
+
+            console.log("Não conseguiu acessar o BD: "+ err);
+            res.status(400).send('{'+err+'}');
+
+        }else{
+
+            var q ={
+                //update tb_local set nome = '', quantboots = 0, quantrounds = 0 where codigo = 4
+                text: 'update tb_local set nome = $1, statuslocal = $2 where codigo = $3',
+                values: [req.body.nome, req.body.statuslocal, req.body.codigo]
+            }
+            console.log(q);
+     
+            client.query(q,function(err,result) {
+                done(); // closing the connection;
+                if(err){
+                    console.log("Erro no updatelocal: "+err);
+                    res.status(400).send('{'+err+'}');
+                }else{             
+                    res.status(200).send(req.body);//se não realizar o send nao finaliza o client nao finaliza
+                }
+            });
+        }
+     });
+});
+
+sw.get('/deletelocal/:codigo', (req, res) => {
+
+    postgres.connect(function(err,client,done) {
+        if(err){
+            console.log("Não conseguiu acessar o banco de dados"+ err);
+            res.status(400).send('{'+err+'}');
+        }else{
+            
+            var q ={
+                text: 'delete FROM tb_local where codigo = $1',
+                values: [req.params.codigo]
+            }
+    
+            client.query( q , function(err,result) {
+                done(); // closing the connection;
+                if(err){
+                    console.log(err);
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    res.status(200).send({'codigo': req.params.codigo});//retorna o codigo deletado.
+                }
+
+            });
+        } 
+     });
+
 });
 
 
