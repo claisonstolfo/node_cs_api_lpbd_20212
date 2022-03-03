@@ -23,10 +23,37 @@ const config = {
 //definia conexao com o banco de dados.
 const postgres = new pg.Pool(config);
 
+
 //definicao do primeiro serviço web.
 sw.get('/', (req, res) => {
     res.send('Hello, world! meu primeiro teste.  #####');
 })
+
+
+sw.get('/listjogador', function (req, res) {
+
+    //estabelece uma conexão com o banco de dados
+    postgres.connect(function(err,client,done) {
+
+       if(err){
+
+           console.log("Não conseguiu acessar o BD :"+ err);
+           res.status(400).send('{'+err+'}');
+       }else{
+        client.query('select j.nickname, j.senha, j.quantpontos, j.quantdinheiro, to_char(j.datacadastro, \'yyyy/mm/dd\') as data_cadastro, to_char(j.data_ultimo_login, \'yyyy/mm/dd\') as data_ultimo_login, j.situacao, e.cep, e.complemento, e.codigo from tb_jogador j left join tb_endereco e on (j.nickname=e.nicknamejogador) order by j.datacadastro asc;',function(err,result) {        
+                done(); // closing the connection;
+                if(err){
+                    console.log(err);
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    res.status(200).send(result.rows);
+                }
+                
+            });
+       } 
+    });
+});
+
 
 sw.get('/listmodo', function (req, res) {
 
@@ -50,8 +77,6 @@ sw.get('/listmodo', function (req, res) {
             });
        } 
     });
-
-
 });
 
 
