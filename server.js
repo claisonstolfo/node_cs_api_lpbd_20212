@@ -54,6 +54,93 @@ sw.get('/listjogador', function (req, res) {
     });
 });
 
+sw.get('/deletejogador/:nickname', (req, res) => {
+
+    postgres.connect(function(err,client,done) {
+        if(err){
+            console.log("Não conseguiu acessar o banco de dados!"+ err);
+            res.status(400).send('{'+err+'}');
+        }else{
+
+            var q1 ={
+                text: 'delete FROM tb_endereco where nicknamejogador = $1',
+                values: [req.params.nickname]
+            }
+            
+            var q2 ={
+                text: 'delete FROM tb_jogador where nickname = $1',
+                values: [req.params.nickname]
+            }
+    
+            client.query( q1 , function(err,result) {
+                //done(); // closing the connection;
+                if(err){
+                    console.log(err);
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    client.query( q2 , function(err,result) {
+                        done(); // closing the connection;
+                        if(err){
+                            console.log(err);
+                            res.status(400).send('{'+err+'}');
+                        }else{
+                            res.status(200).send({'nickname': req.params.nickname});//retorna o nickname deletado.
+                        }                    
+                    })
+                }
+            });
+        } 
+     });
+});
+
+sw.post('/insertjogador', function (req, res, next) {
+    
+    postgres.connect(function(err,client,done) {
+
+       if(err){
+
+           console.log("Nao conseguiu acessar o  BD "+ err);
+           res.status(400).send('{'+err+'}');
+       }else{            
+
+            var q1 ={
+                text: 'insert into tb_jogador (nickname, senha, quantpontos, quantdinheiro, datacadastro, situacao) values ($1, $2, $3, $4, now(), $5)',
+                values: [req.body.nickname,
+                         req.body.senha,
+                         req.body.quantpontos,
+                         req.body.quantdinheiro,
+                         req.body.situacao]
+            }
+
+            var q2 ={
+                text: 'insert into tb_endereco (complemento, cep, nicknamejogador) values ($1, $2, $3)',
+                values: [req.body.endereco.complemento,
+                         req.body.endereco.cep,
+                         req.body.nickname]
+            }
+            console.log(q1)
+    
+            client.query(q1,function(err,result) {
+                if(err){
+                    console.log('retornou 400 no insert');
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    client.query(q1,function(err,result) {
+                        if(err){
+                            console.log('retornou 400 no insert');
+                            res.status(400).send('{'+err+'}');
+                        }else{
+                            done(); // closing the connection;
+                            console.log('retornou 201 no insert');
+                            res.status(201).send(req.body.nickname);//se não realizar o send nao finaliza o client
+                        }
+                    });
+                }           
+            });
+       }       
+    });
+});
+
 
 sw.get('/listmodo', function (req, res) {
 

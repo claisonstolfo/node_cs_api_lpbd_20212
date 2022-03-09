@@ -274,28 +274,54 @@
                     addJogador: function () {
                         
                         var input_indice = this.novo_jogador.indice;  
-                        var input_nickname = this.novo_jogador.nickname.trim(); 
-                        var input_data_nascimento = this.novo_jogador.data_nascimento.trim(); 
-                        var input_qtd_estrela = this.novo_jogador.qtd_estrela;                         
+                        var input_nickname = this.novo_jogador.nickname.trim();
                         var input_senha = this.novo_jogador.senha.trim();
-                        var input_status = this.novo_jogador.status;
-                        var select_endereco = this.novo_jogador.endereco;
+                        var input_situacao = this.novo_jogador.situacao;                                                              
+                        var input_quantpontos = this.novo_jogador.quantpontos;
+                        var input_quantdinheiro = this.novo_jogador.quantdinheiro;
+                        var input_cep = this.novo_jogador.endereco.cep;
+                        var input_complemento = this.novo_jogador.endereco.complemento;
 
-                        //Atividade 5 - testar o tamanho do nickname e senha. Não permitir tamanhos menores do que 4 para ambos.
-                        if (input_nickname && input_qtd_estrela > -1 && input_senha && select_endereco) {
+                        if (input_nickname.length > 0 && input_senha.length > 0 && input_quantpontos > 0 && input_quantdinheiro > 0 && input_cep.length == 8) {
                             
                             //documentação sobre o parseInt
                             //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/parseInt
                             if(isNaN(parseInt(input_indice))){
 
-                                this.jogadores.push({nickname: input_nickname, 
-                                                 data_nascimento: input_data_nascimento, 
-                                                 qtd_estrela: input_qtd_estrela, 
-                                                 status: input_status, 
-                                                 senha:input_senha,
-                                                 endereco:select_endereco}
-                                                );
+                                if(input_situacao == true){
+                                    input_situacao = 'A';
+                                }else{
+                                    input_situacao = 'I';
+                                }
 
+                                this.$http.post('http://localhost:4000/insertjogador', 
+                                {
+                                    nickname:input_nickname,
+                                    senha: input_senha,
+                                    quantpontos: input_quantpontos,
+                                    quantdinheiro: input_quantdinheiro,
+                                    situacao: input_situacao,
+                                    endereco: {cep: input_cep,
+                                               complemento: input_complemento}})
+                                                                            
+                                
+								.then(response => { 									
+										console.log(response);                                                                             
+										this.jogadores.push({
+                                                            nickname:input_nickname,
+                                                            senha: input_senha,
+                                                            quantpontos: input_quantpontos,
+                                                            quantdinheiro: input_quantdinheiro,
+                                                            situacao: input_situacao,
+                                                            endereco: {cep: input_cep,
+                                                                       complemento: input_complemento}})                                     
+
+                                        alert('Inseriu o jogador '+response.data);
+									})
+								.catch(error => { 
+                                    console.log(error)                               
+									alert('Erro ao inserir jogador: '+error.response.data);					
+								});
                                 
                                 alert('Novo Jogador cadastrado !');
 
@@ -311,12 +337,12 @@
 
                                 alert('Jogador alterado !');
                             }
-                            localStorage.setItem("jogadores" , JSON.stringify(this.jogadores));
+                            //localStorage.setItem("jogadores" , JSON.stringify(this.jogadores));
                             this.cleanFormularioJogador();
 
                         }else{
 
-                            alert("Preencha nickname, estrelas e senha !!!");
+                            alert("Preencha o formulário !!!");
                         }
                     },
 
@@ -336,12 +362,32 @@
                         
                         //documentacao sobre o splice
                         //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Array/splice
-                        //remove 1 elemento do índice definido pela variavel param_index
-                        this.jogadores.splice(param_index, 1);
+                        //remove 1 elemento do índice definido pela variavel param_index                        
+                        var r = confirm("Deseja realmente remover?");
+                        if(r){                            
+                            
+                            this.$http.get('http://localhost:4000/deletejogador/' + this.jogadores[param_index].nickname)
 
-                        localStorage.setItem("jogadores" , JSON.stringify(this.jogadores));
+                                .then(response => {                                   
 
-                        alert('Removeu o jogador: ' + param_index);
+                                    //documentacao sobre o splice
+                                    //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Array/splice
+                                    //remove 1 elemento do índice definido pela variavel param_index
+                                    this.jogadores.splice(param_index, 1);
+
+                                    alert('Removeu com sucesso o jogador ' + response.data.nickname);
+
+                                    })
+                                .catch(error => {
+                                        // error callback                                        
+                                        alert('Erro ao remover: ' + error);
+                                        console.log(error);
+                                });	
+
+                        } 
+
+
+
                     },
 
                     cleanFormularioJogador: function() {
