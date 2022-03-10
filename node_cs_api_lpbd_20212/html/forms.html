@@ -13,7 +13,7 @@
     <body> 
        
         <div class="container-fluid">
-            <h2>Formulários e LocalStorage</h2>
+            <h2>Formulários e Banco de Dados</h2>
                <div class="row">
              <div class="col-xs-3">
                <ul class="nav nav-pills nav-stacked">
@@ -28,21 +28,24 @@
                    <h3>HOME</h3>
                    <p>Em breve autenticação de Jogador... </p>
                  </div>
+
                  <div id="menu1" class="tab-pane fade">
                   
                     <h2>Listagem de Endereços</h2>   
 
                     <table class="table table-striped" >
                         <tr>
-                            <th scope="col">Id</th>
+                            <th scope="col">Código</th>
                             <th scope="col">CEP</th>
+                            <th scope="col">Nickname do Jogador</th>
                             <th scope="col">Alterar</th>
                             <th scope="col">Remover</th>
                         </tr>                     
                         <tbody>
                             <tr v-for="(e, indice) in enderecos">                                                
-                                    <td>{{e.id}}</td>
+                                    <td>{{e.código}}</td>
                                     <td>{{e.cep}}</td>
+                                    <td>{{e.nickname}}</td>
                                     <td><button v-on:click="editEndereco(indice)" class="btn" type="button">Alterar</button></td>
                                     <td><button v-on:click="remEndereco(indice)" class="btn" type="button">Remover</button></td>
                             </tr>
@@ -53,17 +56,28 @@
                         <h3>Formulário para cadastrar Endereço</h3>                   
                         <div>
                           <div class="form-group">
-                            <label for="inputId">#:</label>
+                            <label for="inputCodigo">#:</label>
                             <input type="text" v-model="novo_endereco.id" class="form-control" id="inputId" disabled>
                           </div>
                           <div class="form-group">
                               <label for="inputCEP">CEP:</label>
                               <input type="text" v-model="novo_endereco.cep" class="form-control" id="inputNickname">
                           </div>
+
                           <div class="form-group">
                               <label for="inputComplemento">Complemento:</label>
                               <input type="text" v-model="novo_endereco.complemento" class="form-control" id="inputComplemento"><!--Atividade 2 - Aplicar um input/calendario mais apropriado. -->
-                          </div>     
+                          </div>
+
+                          <div class="form-group">
+                            <label for="selectNickname"><a href="#menu2">Nickname do Jogador:</a></label>
+                            <select v-model="novo_endereco.jogador.nickname" class="form-control" id="selectNickname">
+                                <option disabled value="">Escolha um item</option>
+                                <option v-for="e in jogadores" v-bind:value="e">
+                                    {{ e.nickname}}
+                                </option>
+                            </select>
+                          </div>    
                             
                           <button @click="addEndereco" class="btn btn-primary" type="button">Salvar</button>
                           <button @click="cleanFormularioEndereco" class="btn btn-primary" type="button">Limpar</button>                         
@@ -90,7 +104,7 @@
                             <tr v-for="(j, indice) in jogadores">                                                
                                     <td>{{indice}}</td>
                                     <td>{{j.nickname}}</td>
-                                    <td>{{j.data_cadastro | formataData}}</td>
+                                    <td>{{j.data_cadastro}}</td>
                                     <td>{{j.quantpontos}}</td>
                                     <td>{{j.endereco.cep}}</td>
                                     <td v-if="j.situacao == 'A'"><input type="checkbox" checked disabled></td>
@@ -178,7 +192,7 @@
                                     situacao: '',
                                     endereco: {codigo: 0, cep: '', complemento: ''}},
                   "enderecos": enderecos,
-                  "novo_endereco" : {codigo: '', cep: '', complemento: ''}};
+                  "novo_endereco" : {codigo: '', cep: '', complemento: '', jogador: {nickname: ''}}};
 
       
 
@@ -273,71 +287,50 @@
 
                     addJogador: function () {
                         
-                        var input_indice = this.novo_jogador.indice;  
-                        var input_nickname = this.novo_jogador.nickname.trim();
-                        var input_senha = this.novo_jogador.senha.trim();
-                        var input_situacao = this.novo_jogador.situacao;                                                              
-                        var input_quantpontos = this.novo_jogador.quantpontos;
-                        var input_quantdinheiro = this.novo_jogador.quantdinheiro;
-                        var input_cep = this.novo_jogador.endereco.cep;
-                        var input_complemento = this.novo_jogador.endereco.complemento;
+                        var jogador = jQuery.extend({}, this.novo_jogador);//clona o this.novo_jogador e armazena na variavel jogador. dessa forma alteracoes em this.novo_jogador nao irao refletir em jogador.
+                        var endereco = jQuery.extend({}, this.novo_jogador.endereco);//clona o this.novo_jogador.endereco
+                        jogador.endereco = endereco;
 
-                        if (input_nickname.length > 0 && input_senha.length > 0 && input_quantpontos > 0 && input_quantdinheiro > 0 && input_cep.length == 8) {
+
+                        if (jogador.nickname.trim().length > 0 && jogador.senha.trim().length > 0 && 
+                            jogador.quantpontos > 0 && jogador.quantdinheiro > 0 && 
+                            jogador.endereco.cep.length > 0) {
                             
                             //documentação sobre o parseInt
                             //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/parseInt
-                            if(isNaN(parseInt(input_indice))){
+                            if(isNaN(parseInt(jogador.indice))){
 
-                                if(input_situacao == true){
-                                    input_situacao = 'A';
-                                }else{
-                                    input_situacao = 'I';
-                                }
-
-                                this.$http.post('http://localhost:4000/insertjogador', 
-                                {
-                                    nickname:input_nickname,
-                                    senha: input_senha,
-                                    quantpontos: input_quantpontos,
-                                    quantdinheiro: input_quantdinheiro,
-                                    situacao: input_situacao,
-                                    endereco: {cep: input_cep,
-                                               complemento: input_complemento}})
-                                                                            
-                                
-								.then(response => { 									
-										console.log(response);                                                                             
-										this.jogadores.push({
-                                                            nickname:input_nickname,
-                                                            senha: input_senha,
-                                                            quantpontos: input_quantpontos,
-                                                            quantdinheiro: input_quantdinheiro,
-                                                            situacao: input_situacao,
-                                                            endereco: {cep: input_cep,
-                                                                       complemento: input_complemento}})                                     
-
-                                        alert('Inseriu o jogador '+response.data);
+                                                         
+                                this.$http.post('http://localhost:4000/insertjogador', jogador
+                                   )
+								.then(response => { 	
+										
+										this.jogadores.push(response.data);										
+                                        alert('Inseriu o jogador '+response.data.nickname);
 									})
 								.catch(error => { 
-                                    console.log(error)                               
-									alert('Erro ao inserir jogador: '+error.response.data);					
-								});
-                                
-                                alert('Novo Jogador cadastrado !');
+                                    console.log(error)
+									alert('Erro ao inserir jogador: '+error.response.data);
+								});	
 
                             }else{
 
-                                this.jogadores[input_indice] = {nickname: input_nickname, 
-                                                 data_nascimento: input_data_nascimento, 
-                                                 qtd_estrela: input_qtd_estrela, 
-                                                 status: input_status, 
-                                                 senha:input_senha,
-                                                 endereco:select_endereco
-                                                };
+                                this.$http.post('http://localhost:4000/updatejogador', jogador
+                                   )
+								.then(response => { 	
+										                                        
+                                        //this.jogadores[jogador.indice]  = response.data;	                                        
+                                        Vue.set(this.jogadores, jogador.indice, response.data);//altera um elemento do vetor this.jogadores
 
-                                alert('Jogador alterado !');
+                                        alert('Alterou o jogador '+response.data.nickname);
+									})
+								.catch(error => { 
+                                    console.log(error)
+									alert('Erro ao alterar jogador: '+error);
+								});	
+
                             }
-                            //localStorage.setItem("jogadores" , JSON.stringify(this.jogadores));
+
                             this.cleanFormularioJogador();
 
                         }else{
@@ -346,14 +339,19 @@
                         }
                     },
 
+
                     editJogador: function (param_index) {
 
                         this.novo_jogador.indice = param_index;
                         this.novo_jogador.nickname = this.jogadores[param_index].nickname; 
-                        this.novo_jogador.data_nascimento = this.jogadores[param_index].data_nascimento;
-                        this.novo_jogador.qtd_estrela = this.jogadores[param_index].qtd_estrela;
                         this.novo_jogador.senha = this.jogadores[param_index].senha;
+                        this.novo_jogador.datacadastro = this.jogadores[param_index].datacadastro;
+                        this.novo_jogador.data_ultimo_login = this.jogadores[param_index].data_ultimo_login;
+                        this.novo_jogador.quantpontos = this.jogadores[param_index].quantpontos;
+                        this.novo_jogador.quantdinheiro = this.jogadores[param_index].quantdinheiro;
+                        this.novo_jogador.situacao = this.jogadores[param_index].situacao == "A" ? true : false;
                         this.novo_jogador.endereco = this.jogadores[param_index].endereco;
+
                     },
 
                     remJogador: function(param_index){
@@ -391,14 +389,16 @@
                     },
 
                     cleanFormularioJogador: function() {
-
-                      this.novo_jogador.indice = '';
-                      this.novo_jogador.nickname = ''; 
-                      this.novo_jogador.data_nascimento = '';
-                      this.novo_jogador.qtd_estrela = 0;
-                      this.novo_jogador.senha = '';
-                      this.novo_jogador.status = true;
-                      this.novo_jogador.endereco = '';
+                        this.novo_jogador.indice = '';
+                        this.novo_jogador.nickname = ''; 
+                        this.novo_jogador.datacadastro = '';
+                        this.novo_jogador.quantdinheiro = 0;
+                        this.novo_jogador.quantpontos = 0;
+                        this.novo_jogador.senha = '';
+                        this.novo_jogador.situacao = false;
+                        this.novo_jogador.endereco.cep = '';
+                        this.novo_jogador.endereco.complemento = '';
+                        this.novo_jogador.data_ultimo_login = '';
                     }
 
                 },

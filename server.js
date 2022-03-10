@@ -40,7 +40,7 @@ sw.get('/listjogador', function (req, res) {
            console.log("Não conseguiu acessar o BD :"+ err);
            res.status(400).send('{'+err+'}');
        }else{
-        client.query('select j.nickname, j.senha, j.quantpontos, j.quantdinheiro, to_char(j.datacadastro, \'yyyy/mm/dd\') as data_cadastro, to_char(j.data_ultimo_login, \'yyyy/mm/dd\') as data_ultimo_login, j.situacao, e.cep, e.complemento, e.codigo from tb_jogador j left join tb_endereco e on (j.nickname=e.nicknamejogador) order by j.datacadastro asc;',function(err,result) {        
+        client.query('select j.nickname, j.senha, j.quantpontos, j.quantdinheiro, to_char(j.datacadastro, \'dd/mm/yyyy\') as data_cadastro, to_char(j.data_ultimo_login, \'dd/mm/yyyy\') as data_ultimo_login, j.situacao, e.cep, e.complemento, e.codigo from tb_jogador j left join tb_endereco e on (j.nickname=e.nicknamejogador) order by j.datacadastro asc;',function(err,result) {        
                 done(); // closing the connection;
                 if(err){
                     console.log(err);
@@ -104,35 +104,98 @@ sw.post('/insertjogador', function (req, res, next) {
        }else{            
 
             var q1 ={
-                text: 'insert into tb_jogador (nickname, senha, quantpontos, quantdinheiro, datacadastro, situacao) values ($1, $2, $3, $4, now(), $5)',
-                values: [req.body.nickname,
-                         req.body.senha,
-                         req.body.quantpontos,
-                         req.body.quantdinheiro,
-                         req.body.situacao]
+                text: 'insert into tb_jogador (nickname, senha, quantPontos, quantdinheiro, datacadastro, situacao) values ($1,$2,$3,$4,now(), $5) ' +
+                                            'returning nickname, senha, quantpontos, quantdinheiro, to_char(datacadastro, \'dd/mm/yyyy\') as datacadastro, situacao;',
+                values: [req.body.nickname, 
+                         req.body.senha, 
+                         req.body.quantpontos, 
+                         req.body.quantdinheiro, 
+                         req.body.situacao == true ? "A" : "I"]
             }
-
-            var q2 ={
-                text: 'insert into tb_endereco (complemento, cep, nicknamejogador) values ($1, $2, $3)',
-                values: [req.body.endereco.complemento,
-                         req.body.endereco.cep,
+            var q2 = {
+                text : 'insert into tb_endereco (complemento, cep, nicknamejogador) values ($1, $2, $3) returning codigo, complemento, cep;',
+                values: [req.body.endereco.complemento, 
+                         req.body.endereco.cep, 
                          req.body.nickname]
             }
-            console.log(q1)
-    
-            client.query(q1,function(err,result) {
+            console.log(q1);
+
+            client.query(q1, function(err,result1) {
                 if(err){
                     console.log('retornou 400 no insert');
                     res.status(400).send('{'+err+'}');
                 }else{
-                    client.query(q1,function(err,result) {
+                    client.query(q2, function(err,result2) {
                         if(err){
                             console.log('retornou 400 no insert');
                             res.status(400).send('{'+err+'}');
                         }else{
                             done(); // closing the connection;
                             console.log('retornou 201 no insert');
-                            res.status(201).send(req.body.nickname);//se não realizar o send nao finaliza o client
+                            res.status(201).send({"nickname" : result1.rows[0].nickname, 
+                                                  "senha": result1.rows[0].senha, 
+                                                  "quantpontos": result1.rows[0].quantpontos, 
+                                                  "quantdinheiro": result1.rows[0].quantdinheiro,
+                                                  "situacao": result1.rows[0].situacao,
+                                                  "datacadastro" : result1.rows[0].datacadastro,
+                                                  "endereco": {"codigo": result2.rows[0].codigo, "cep": result2.rows[0].cep, "complemento": result2.rows[0].complemento}});
+                        }
+                    });
+                }           
+            });
+       }       
+    });
+});
+
+sw.post('/updatejogador', function (req, res, next) {
+    
+    postgres.connect(function(err,client,done) {
+
+       if(err){
+
+           console.log("Nao conseguiu acessar o  BD "+ err);
+           res.status(400).send('{'+err+'}');
+       }else{            
+
+            var q1 ={
+                text: 'update tb_jogador set senha = $1, quantPontos = $2, quantdinheiro = $3, situacao = $4 where nickname = $5 ' +
+                                            'returning nickname, senha, quantpontos, quantdinheiro, to_char(datacadastro, \'dd/mm/yyyy\') as datacadastro, situacao;',
+                values: [ 
+                         req.body.senha, 
+                         req.body.quantpontos, 
+                         req.body.quantdinheiro, 
+                         req.body.situacao == true ? "A" : "I",
+                         req.body.nickname]
+            }
+            var q2 = {
+                text : 'update tb_endereco set complemento = $1, cep = $2 where nicknamejogador = $3 returning codigo, complemento, cep;',
+                values: [req.body.endereco.complemento, 
+                         req.body.endereco.cep, 
+                         req.body.nickname]
+            }
+            console.log(q1);
+            console.log(q2);
+
+            client.query(q1, function(err,result1) {
+                if(err){
+                    console.log('retornou 400 no update');
+                    console.log(err)
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    client.query(q2, function(err,result2) {
+                        if(err){
+                            console.log('retornou 400 no update');
+                            res.status(400).send('{'+err+'}');
+                        }else{
+                            done(); // closing the connection;
+                            console.log('retornou 201 no update');
+                            res.status(201).send({"nickname" : result1.rows[0].nickname, 
+                                                  "senha": result1.rows[0].senha, 
+                                                  "quantpontos": result1.rows[0].quantpontos, 
+                                                  "quantdinheiro": result1.rows[0].quantdinheiro,
+                                                  "situacao": result1.rows[0].situacao,
+                                                  "datacadastro" : result1.rows[0].datacadastro,
+                                                  "endereco": {"codigo": result2.rows[0].codigo, "cep": result2.rows[0].cep, "complemento": result2.rows[0].complemento}});
                         }
                     });
                 }           
@@ -375,6 +438,7 @@ sw.get('/deletelocal/:codigo', (req, res) => {
             });
         } 
      });
+     
 
 });
 
